@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PadiSehat - Deteksi Penyakit Padi</title>
+
+  <!-- Minimal modern CSS (embedded) -->
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#0f766e; /* hijau */
+      --accent-2:#064e3b;
+      --danger:#dc2626;
+      --glass: rgba(255,255,255,0.6);
+      --radius:14px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(180deg,#f7fafc 0%, var(--bg) 100%);
+      color:#0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:28px;
+      display:flex;
+      justify-content:center;
+      font-size:15px;
+    }
+
+    .container{
+      width:100%;
+      max-width:1200px;
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap:20px;
+      align-items:start;
+    }
+
+    header.site {
+      grid-column: 1 / -1;
+      display:flex;
+      gap:18px;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .brand{
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      color:white;
+      padding:12px 16px;
+      border-radius:12px;
+      font-weight:700;
+      font-size:18px;
+      letter-spacing:0.4px;
+      box-shadow: 0 6px 18px rgba(15,118,110,0.12);
+    }
+    header h1{
+      margin:0;
+      font-size:20px;
+    }
+    header p{ margin:0; color:var(--muted); font-size:13px }
+
+    /* Left column (main) */
+    .panel{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow: 0 6px 18px rgba(12,18,26,0.06);
+    }
+
+    .upload-area{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:16px;
+      align-items:center;
+    }
+
+    .upload-card{
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(15,118,110,0.03), rgba(15,118,110,0.01));
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      min-height:260px;
+    }
+
+    .preview{
+      width:320px;
+      height:220px;
+      border-radius:10px;
+      background:linear-gradient(180deg,#fff,#f8fafc);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      border:1px dashed rgba(15,118,110,0.08);
+    }
+    .preview img{ width:100%; height:100%; object-fit:cover }
+
+    .input-block{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .file-input{
+      padding:10px;
+      border-radius:10px;
+      background:var(--glass);
+      border:1px solid rgba(15,118,110,0.06);
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    input[type=file]{ display:inline-block; }
+    button.primary{
+      border: none;
+      background:var(--accent);
+      color:white;
+      padding:12px 16px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+      box-shadow: 0 8px 20px rgba(15,118,110,0.14);
+    }
+    button.ghost{
+      background:transparent;
+      border:1px solid rgba(15,118,110,0.08);
+      color:var(--accent-2);
+      padding:10px 12px;
+      border-radius:10px;
+      cursor:pointer;
+    }
+
+    .result{
+      margin-top:10px;
+      padding:12px;
+      border-radius:10px;
+      background:linear-gradient(180deg, rgba(6,78,59,0.04), rgba(6,78,59,0.02));
+      border:1px solid rgba(6,78,59,0.04);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .prediction{
+      font-weight:700;
+      color:var(--accent-2);
+      font-size:18px;
+    }
+    .confidence{ color:var(--muted); font-size:13px }
+
+    /* Right column (sidebar) */
+    .sidebar{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+
+    .feed{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height:520px;
+      overflow:auto;
+    }
+    .tweet{
+      background:linear-gradient(180deg,#fff,#fbfcfd);
+      padding:12px;
+      border-radius:12px;
+      border:1px solid rgba(14,20,30,0.03);
+    }
+    .tweet h4{ margin:0 0 6px 0; font-size:14px }
+    .tweet p{ margin:0; color:var(--muted); font-size:13px }
+
+    .compose{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .compose textarea{
+      flex:1;
+      min-height:56px;
+      border-radius:10px;
+      padding:10px;
+      border:1px solid rgba(12,18,26,0.06);
+      resize:vertical;
+      font-family:inherit;
+      font-size:14px;
+    }
+
+    /* Education cards */
+    .edu-grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+    .edu{
+      padding:10px;
+      border-radius:10px;
+      background:linear-gradient(180deg,#fff,#fbfcfd);
+      border:1px solid rgba(12,18,26,0.03);
+      font-size:13px;
+      color:var(--muted);
+      min-height:78px;
+    }
+    .edu h5{ margin:0 0 6px 0; color:var(--accent-2); font-size:13px }
+
+    /* Blockchain lite section */
+    .block{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(99,102,241,0.02), rgba(99,102,241,0.01));
+      border:1px solid rgba(99,102,241,0.04);
+    }
+    .block small{ color:var(--muted); display:block }
+
+    /* Responsive */
+    @media (max-width:980px){
+      .container{ grid-template-columns: 1fr; padding:6px }
+      .upload-area{ grid-template-columns: 1fr; }
+      .edu-grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width:560px){
+      .edu-grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="site">
+      <div class="brand">PadiSehat</div>
+      <div>
+        <h1>Deteksi Penyakit Padi — Upload & Dapatkan Hasil</h1>
+        <p>Antarmuka sederhana untuk petani. Upload foto daun, sistem akan mendeteksi dan memberi rekomendasi.</p>
+      </div>
+    </header>
+
+    <!-- MAIN COLUMN -->
+    <main class="panel">
+      <div class="upload-area">
+        <div class="upload-card">
+          <div class="preview" id="previewBox">
+            <!-- Jika ada image_path dari Flask, tampilkan -->
+            {% if image_path %}
+              <img id="previewImage" src="{{ image_path }}" alt="Preview">
+            {% else %}
+              <div style="text-align:center;color:var(--muted);padding:18px;">
+                <div style="font-weight:600;color:var(--accent-2);margin-bottom:6px">Preview</div>
+                <div style="font-size:13px">Belum ada gambar — upload foto daun padi</div>
+              </div>
+            {% endif %}
+          </div>
+          <div style="width:100%;margin-top:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-size:13px;color:var(--muted)">Petunjuk singkat</div>
+              <div style="font-size:12px;color:var(--muted)">Foto close-up, pencahayaan cukup</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-block panel" style="min-height:260px;">
+          <form id="predictForm" method="POST" enctype="multipart/form-data">
+            <label style="font-weight:700;margin-bottom:6px;display:block">Upload Foto Daun</label>
+            <div class="file-input">
+              <input id="fileInput" type="file" name="file" accept="image/*" required>
+              <div style="flex:1"></div>
+              <button type="submit" class="primary">Predict</button>
+            </div>
+          </form>
+
+          <div class="result" style="margin-top:14px;">
+            <div>
+              <div style="font-size:13px;color:var(--muted)">Hasil Prediksi</div>
+              <div class="prediction">
+                {% if prediction %} {{ prediction }} {% else %} - {% endif %}
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div class="confidence">Confidence: {% if confidence %}{{ confidence }}{% else %}-{% endif %}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">Model: MobileNetV2 (224×224)</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;color:var(--muted);font-size:13px">
+            <strong>Rekomendasi:</strong>
+            <div id="adviceText" style="margin-top:8px">
+              {% if prediction %}
+                <!-- backend bisa mengganti rekomendasi sesuai hasil -->
+                Silakan cek bagian edukasi untuk langkah penanganan awal. Untuk konfirmasi hasil, kirim sampel ke penyuluh.
+              {% else %}
+                Upload gambar untuk melihat saran penanganan.
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Education / Info -->
+      <section style="margin-top:18px;">
+        <h3 style="margin:6px 0 12px 0">Edukasi Singkat Penyakit Umum</h3>
+        <div class="edu-grid">
+          <div class="edu">
+            <h5>Hawar Daun Bakteri</h5>
+            <div>Gejala: bercak basah pada daun, bercak berwarna kecokelatan yang menyebar. Pencegahan: tanam varietas tahan, sanitasi peralatan.</div>
+          </div>
+          <div class="edu">
+            <h5>Bercak Cokelat</h5>
+            <div>Gejala: bintik kecil cokelat yang membesar. Pengendalian: pemupukan seimbang, fungisida sesuai anjuran.</div>
+          </div>
+          <div class="edu">
+            <h5>Blast Daun</h5>
+            <div>Gejala: bercak kuning keputihan dengan tepi gelap. Jaga jarak tanam, hindari kelembaban berlebih.</div>
+          </div>
+          <div class="edu">
+            <h5>Hama Penggerek Daun (Hispa)</h5>
+            <div>Gejala: garis-garis putih tipis pada daun. Monitoring, pakai perangkap, atau insektisida terukur.</div>
+          </div>
+          <div class="edu">
+            <h5>Hawar Pelepah</h5>
+            <div>Gejala: bercak pada pelepah batang. Kontrol kelembaban dan rotasi tanaman.</div>
+          </div>
+          <div class="edu">
+            <h5>Tungro</h5>
+            <div>Penyakit virus yang ditularkan wereng. Gunakan benih sehat dan kendalikan vektor wereng.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Blockchain idea -->
+      <section style="margin-top:18px;">
+        <h3 style="margin:6px 0 12px 0">Lapor & Verifikasi (Blockchain)</h3>
+        <div class="block">
+          <div style="flex:1">
+            <small>Fitur ini menandai laporan penting (mis. wabah) dan menyimpan bukti snapshot ke ledger/IPFS agar tidak mudah diubah. Di sini hanya antarmuka; backend perlu integrasi Web3 / IPFS / smart contract.</small>
+          </div>
+          <div style="display:flex;gap:8px">
+            <form id="reportForm" method="POST" action="/report">
+              <input type="hidden" name="image_ref" id="imageRef" value="">
+              <input type="text" name="reporter" placeholder="Nama/Asal (opsional)" style="border-radius:8px;padding:8px;border:1px solid rgba(12,18,26,0.06)">
+              <button type="submit" class="ghost">Lapor & Anchor</button>
+            </form>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:var(--muted)">
+          Catatan: untuk benar-benar menyimpan ke blockchain, backend harus:
+          <ul style="margin:6px 0 0 18px;color:var(--muted)">
+            <li>Mengupload bukti (gambar + metadata) ke IPFS dan menyimpan CID</li>
+            <li>Membuat transaksi ke smart contract yang mencatat CID + timestamp + reporter</li>
+            <li>Menyediakan endpoint /report yang memanggil service Web3</li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="panel" style="padding:12px;">
+        <h3 style="margin:0 0 8px 0">Berita & Forum Petani</h3>
+
+        <!-- compose -->
+        <div style="margin-bottom:10px;">
+          <form id="composeForm" onsubmit="postTweet(event)">
+            <div class="compose">
+              <textarea id="composeText" placeholder="Bagikan info singkat: hama/hasil panen/pertanyaan..." maxlength="280"></textarea>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px;gap:8px">
+              <button type="button" class="ghost" onclick="document.getElementById('composeText').value=''">Batal</button>
+              <button type="submit" class="primary">Bagikan</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- feed -->
+        <div class="feed" id="feed">
+          <!-- contoh tweet statis (server bisa inject real feed) -->
+          <div class="tweet">
+            <h4>Pak Widodo · Desa Sukamaju</h4>
+            <p>Pagi, ada yang juga alami bercak cokelat di sawah blok B? Pakai pupuk apa ya? </p>
+          </div>
+          <div class="tweet">
+            <h4>Penyuluh · Dinas Pertanian</h4>
+            <p>Ingatkan rotasi tanaman dan sanitasi lahan. Bila wabah besar laporkan ke kelurahan.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin:0 0 8px 0">Quick Tips</h3>
+        <ul style="margin:0;padding-left:16px;color:var(--muted);font-size:13px;line-height:1.6">
+          <li>Ambil foto dengan pencahayaan baik.</li>
+          <li>Fokus pada bagian yang sakit.</li>
+          <li>Gunakan varietas lokal tahan penyakit bila tersedia.</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin:0 0 8px 0">Tentang Hackathon</h3>
+        <p style="color:var(--muted);font-size:13px">Proyek ini cocok untuk lomba: fitur AI deteksi, feed komunitas, dan auditable reporting via blockchain untuk bukti wabah.</p>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Minimal JS untuk preview & feed -->
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const previewBox = document.getElementById('previewBox');
+    const previewImage = document.getElementById('previewImage');
+    const imageRef = document.getElementById('imageRef');
+
+    fileInput?.addEventListener('change', (e)=>{
+      const f = e.target.files[0];
+      if(!f) return;
+      const url = URL.createObjectURL(f);
+      // replace preview
+      if(previewImage){
+        previewImage.src = url;
+      } else {
+        const img = document.createElement('img');
+        img.id = 'previewImage';
+        img.src = url;
+        img.alt = 'Preview';
+        previewBox.innerHTML = '';
+        previewBox.appendChild(img);
+      }
+      // jika ingin, set hidden field untuk blockchain report reference
+      if(imageRef) imageRef.value = f.name;
+    });
+
+    // very small client-side feed (demo). On submit, prepend to feed.
+    function postTweet(e){
+      e.preventDefault();
+      const txt = document.getElementById('composeText').value.trim();
+      if(!txt) return;
+      const feed = document.getElementById('feed');
+      const node = document.createElement('div');
+      node.className = 'tweet';
+      const now = new Date();
+      node.innerHTML = '<h4>Anda · Sekarang</h4><p>'+escapeHtml(txt)+'</p>';
+      feed.prepend(node);
+      document.getElementById('composeText').value = '';
+    }
+
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+  </script>
+</body>
+</html>
