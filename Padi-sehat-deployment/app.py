@@ -1,75 +1,67 @@
-import os
+import streamlit as st
 import numpy as np
-from flask import Flask, request, render_template
+import json
 from PIL import Image
 from tensorflow.keras.models import load_model
-import json
-
-app = Flask(__name__)
-
-# Folder upload
-UPLOAD_FOLDER = "Padi-sehat-deployment/uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Path model dan metadata
-MODEL_PATH = "Padi-sehat-deployment/model/best_model_mobilenetv2.keras"
-META_PATH = "Padi-sehat-deployment/model/model_metadata.json"
-
-# Load model keras
-model = load_model(MODEL_PATH)
 
 # Load metadata
-with open(META_PATH, "r") as f:
+with open("Padi-sehat-deployment/model/model_metadata.json", "r") as f:
     metadata = json.load(f)
 
-class_indices = metadata["class_indices"]
-class_names = metadata["class_names"]
 label_map = metadata["label_map"]
+img_size = metadata["input_shape"][:2]
 
-# Input size harus 224x224x3
-IMG_SIZE = (224, 224)
+# Load model
+model = load_model("Padi-sehat-deployment/model/best_model_mobilenetv2.keras")
 
-def preprocess_image(filepath):
-    img = Image.open(filepath).convert("RGB")
-    img = img.resize(IMG_SIZE)
+# Page config
+st.set_page_config(page_title="PadiSehat AI", layout="centered")
+
+# Custom minimalistic style
+st.markdown("""
+    <style>
+        .title { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #2b7a0b;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #333;
+        }
+        .result {
+            padding: 10px;
+            background: #e9ffe6;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2b7a0b;
+            margin-top: 15px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("<div class='title'>🌾 PadiSehat AI</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Deteksi penyakit daun padi secara cepat.</div><br>", unsafe_allow_html=True)
+
+uploaded_file = st.file_uploader("Upload foto daun padi", type=["jpg", "jpeg", "png"])
+
+def preprocess_image(img):
+    img = img.convert("RGB")
+    img = img.resize(img_size)
     img = np.array(img) / 255.0
     img = np.expand_dims(img, axis=0)
     return img
 
+if uploaded_file:
+    img = Image.open(uploaded_file)
+    st.image(img, width=300, caption="Gambar yang diupload")
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    prediction = None
-    image_path = None
+    img_processed = preprocess_image(img)
+    preds = model.predict(img_processed)[0]
 
-    if request.method == "POST":
-        file = request.files.get("file")
+    class_id = np.argmax(preds)
+    class_name = metadata["class_names"][str(class_id)]
+    disease_name = label_map[class_name]
 
-        if not file or file.filename == "":
-            return render_template("index.html", prediction="No image uploaded")
-
-        # Simpan gambar
-        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(filepath)
-        image_path = filepath
-
-        # Preprocess
-        img = preprocess_image(filepath)
-
-        # Predict
-        preds = model.predict(img)
-        pred_idx = np.argmax(preds[0])
-
-        # Ambil nama class (English)
-        class_name = class_names[str(pred_idx)]
-
-        # Ubah ke bahasa Indonesia
-        prediction = label_map[class_name]
-
-    return render_template("index.html",
-                           prediction=prediction,
-                           image_path=image_path)
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    st.markdown(f"<div class='result'>{disease_name}</div>", unsafe_allow_html=True)
